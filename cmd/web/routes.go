@@ -17,6 +17,11 @@ func routes(app *config.AppConfig) http.Handler {
 
 	mux.Get("/", handlers.Repo.Home)
 	mux.Get("/about", handlers.Repo.About)
+	mux.Get("/first-class-quarters", handlers.Repo.FirstClass)
+	mux.Get("/business-class-suites", handlers.Repo.BusinessClass)
+	mux.Get("/reservations", handlers.Repo.Reservation)
+	mux.Get("/contact", handlers.Repo.Contact)
+	mux.Get("/search-availability", handlers.Repo.Availability)
 
 	return mux
 

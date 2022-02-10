@@ -3,9 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/udodinho/bookings/pkg/config"
-	"github.com/udodinho/bookings/pkg/models"
-	"github.com/udodinho/bookings/pkg/render"
+	"github.com/udodinho/bookings/internal/config"
+	"github.com/udodinho/bookings/internal/form"
+	"github.com/udodinho/bookings/internal/models"
+	"github.com/udodinho/bookings/internal/render"
 	"log"
 	"net/http"
 )
@@ -67,7 +68,18 @@ func (m *Repository) BusinessClass(w http.ResponseWriter, r *http.Request) {
 
 // Reservation renders the make reservation page and handles the form submission
 func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{})
+	render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
+		Form: form.New(nil),
+	})
+}
+
+// PostReservation handles the form submission for posting.
+func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 // Availability renders the search availability page

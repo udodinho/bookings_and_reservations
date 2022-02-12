@@ -19,7 +19,7 @@ type Repository struct {
 // Repo the repository used by the handlers
 var Repo *Repository
 
-// NewRepo creates a new Repository
+// NewRepository creates a new Repository
 func NewRepository(a *config.AppConfig) *Repository {
 	return &Repository{App: a}
 }
@@ -68,8 +68,13 @@ func (m *Repository) BusinessClass(w http.ResponseWriter, r *http.Request) {
 
 // Reservation renders the make reservation page and handles the form submission
 func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
+	var emptyReservation models.Reservation
+	data := make(map[string]interface{})
+	data["reservation"] = emptyReservation
+
 	render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
 		Form: form.New(nil),
+		Data: data,
 	})
 }
 
@@ -78,6 +83,26 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
+		return
+	}
+	reservation := models.Reservation{
+		FirstName: r.Form.Get("first_name"),
+		LastName:  r.Form.Get("last_name"),
+		Email:     r.Form.Get("email"),
+		Phone:     r.Form.Get("phone"),
+	}
+	forms := form.New(r.PostForm)
+	//forms.Has("first_name", r)
+	forms.Required("first_name", "last_name", "email")
+	forms.MinLength("first_name", 3, r)
+	if !forms.Valid() {
+		data := make(map[string]interface{})
+		data["reservation"] = reservation
+
+		render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
+			Form: forms,
+			Data: data,
+		})
 		return
 	}
 }

@@ -4,18 +4,29 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1 class="text-center mt-4">Make reservation</h1>
-                <form action="" method="post" class="needs-validation" novalidate>
+                <h1 class="text-center mt-4">Make Reservation</h1>
+                <p><strong>Reservation Details</strong></p>
+
+                {{$res := index .Data "reservation"}}
+
+                <form action="/reservations" method="post" class="" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
                     <div class="row">
                         <div class="col">
                             <div class="mb-3">
-                                <input type="text" class="form-control" id="first_name" placeholder="First Name" required autocomplete="off">
+                                {{with .Form.Errors.Get "first_name"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input type="text" value="{{$res.FirstName}}" class="form-control {{with .Form.Errors.Get "first_name"}} is-invalid {{end}}" id="first_name" name="first_name" placeholder="First Name" required autocomplete="off">
                             </div>
                         </div>
 
                         <div class="col">
                             <div class="mb-3">
-                                <input type="text" class="form-control" id="last_name" placeholder="Last Name" required autocomplete="off">
+                                {{with .Form.Errors.Get "last_name"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input type="text" value="{{$res.LastName}}" class="form-control" id="last_name" name="last_name" placeholder="Last Name" required autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -23,13 +34,19 @@
                     <div class="row">
                         <div class="col">
                             <div class="mb-3">
-                                <input type="email" class="form-control" id="email" placeholder="Email" required autocomplete="off">
+                                {{with .Form.Errors.Get "email"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input type="email" value="{{$res.Email}}" class="form-control" id="email" name="email" placeholder="Email" required autocomplete="off">
                             </div>
                         </div>
 
                         <div class="col">
                             <div class="mb-3">
-                                <input type="text" class="form-control" id="phone" placeholder="Phone number" required autocomplete="off">
+                                {{with .Form.Errors.Get "phone"}}
+                                    <label class="text-danger">{{.}}</label>
+                                {{end}}
+                                <input type="text" value="{{$res.Phone}}" class="form-control" id="phone" name="phone" placeholder="Phone number" required autocomplete="off">
                             </div>
                         </div>
                     </div>

@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/udodinho/bookings/pkg/config"
-	"github.com/udodinho/bookings/pkg/handlers"
+	"github.com/udodinho/bookings/internal/config"
+	"github.com/udodinho/bookings/internal/handlers"
 	"net/http"
 )
 
@@ -20,6 +20,7 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Get("/first-class-quarters", handlers.Repo.FirstClass)
 	mux.Get("/business-class-suites", handlers.Repo.BusinessClass)
 	mux.Get("/reservations", handlers.Repo.Reservation)
+	mux.Post("/reservations", handlers.Repo.PostReservation)
 
 	mux.Get("/contact", handlers.Repo.Contact)
 

@@ -16,6 +16,8 @@ var functions = template.FuncMap{}
 
 var app *config.AppConfig
 
+var pathToTemplate = "./templates"
+
 func NewTemplates(a *config.AppConfig) {
 	app = a
 }
@@ -60,7 +62,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, gohtml string, td *m
 func CreateTemplateCache() (map[string]*template.Template, error) {
 	myCache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob("./templates/*.page.gohtml")
+	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.gohtml", pathToTemplate))
 	if err != nil {
 		return myCache, err
 	}
@@ -71,13 +73,13 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 			return myCache, err
 		}
 
-		matches, err := filepath.Glob("./templates/*.layout.gohtml")
+		matches, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", pathToTemplate))
 		if err != nil {
 			return myCache, err
 		}
 
 		if len(matches) > 0 {
-			ts, err = ts.ParseGlob("./templates/*.layout.gohtml")
+			ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.gohtml", pathToTemplate))
 			if err != nil {
 				return nil, err
 			}

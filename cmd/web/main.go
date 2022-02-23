@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"github.com/alexedwards/scs/v2"
-	"github.com/udodinho/bookings/pkg/config"
-	"github.com/udodinho/bookings/pkg/handlers"
-	"github.com/udodinho/bookings/pkg/render"
+	"github.com/udodinho/bookings/internal/config"
+	"github.com/udodinho/bookings/internal/handlers"
+	"github.com/udodinho/bookings/internal/models"
+	"github.com/udodinho/bookings/internal/render"
 	"log"
 	"net/http"
 	"time"
@@ -18,8 +20,31 @@ var session *scs.SessionManager
 
 // main is the main application function
 func main() {
+	err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Starting server at port: %v\n", portNumber)
+
+	srv := &http.Server{
+		Addr:    portNumber,
+		Handler: routes(&app),
+	}
+
+	err = srv.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func run() error {
 	// If we crash the go code,we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Llongfile)
+
+	//What am I going to put in the session
+	gob.Register(models.Reservation{})
 
 	// Change this to true when in production
 	app.InProduction = false
@@ -35,6 +60,7 @@ func main() {
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("Cannot load template cache")
+		return err
 	}
 
 	app.TemplateCache = tc
@@ -45,19 +71,5 @@ func main() {
 
 	render.NewTemplates(&app)
 
-	//http.HandleFunc("/", handlers.Repo.Home)
-	//http.HandleFunc("/about", handlers.Repo.About)
-
-	fmt.Printf("Starting server at port: %v\n", portNumber)
-
-	srv := &http.Server{
-		Addr:    portNumber,
-		Handler: routes(&app),
-	}
-
-	err = srv.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	return nil
 }

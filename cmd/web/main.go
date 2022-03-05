@@ -6,6 +6,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/udodinho/bookings/helpers"
 	"github.com/udodinho/bookings/internal/config"
+	"github.com/udodinho/bookings/internal/driver"
 	"github.com/udodinho/bookings/internal/handlers"
 	"github.com/udodinho/bookings/internal/models"
 	"github.com/udodinho/bookings/internal/render"
@@ -24,10 +25,11 @@ var errorLog *log.Logger
 
 // main is the main application function
 func main() {
-	err := run()
+	db, err := run()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.SQL.Close()
 
 	fmt.Printf("Starting server at port: %v\n", portNumber)
 
@@ -43,12 +45,15 @@ func main() {
 
 }
 
-func run() error {
+func run() (*driver.DB, error) {
 	// If we crash the go code,we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Llongfile)
 
 	//What am I going to put in the session
 	gob.Register(models.Reservation{})
+	gob.Register(models.User{})
+	gob.Register(models.Room{})
+	gob.Register(models.Restriction{})
 
 	// Change this to true when in production
 	app.InProduction = false
@@ -66,19 +71,27 @@ func run() error {
 
 	app.Session = session
 
+	//Connect to the database
+	log.Println("Connecting to the database...")
+	db, err := driver.ConnectSQL("host=localhost port=5432 user=mac dbname=bookings")
+	if err != nil {
+		log.Fatal("Can't connect to the database! dying...: ")
+	}
+	log.Println("Connected to the database!")
+
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("Cannot load template cache")
-		return err
+		return nil, err
 	}
 
 	app.TemplateCache = tc
 	app.UseCache = false
 
-	repo := handlers.NewRepository(&app)
+	repo := handlers.NewRepository(&app, db)
 	handlers.NewHandlers(repo)
-	render.NewTemplates(&app)
+	render.NewRenderer(&app)
 	helpers.NewHelpers(&app)
 
-	return nil
+	return db, nil
 }

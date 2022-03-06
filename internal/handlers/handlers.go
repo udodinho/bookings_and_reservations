@@ -5,23 +5,32 @@ import (
 	"fmt"
 	"github.com/udodinho/bookings/helpers"
 	"github.com/udodinho/bookings/internal/config"
+	"github.com/udodinho/bookings/internal/driver"
 	"github.com/udodinho/bookings/internal/form"
 	"github.com/udodinho/bookings/internal/models"
 	"github.com/udodinho/bookings/internal/render"
+	"github.com/udodinho/bookings/repository"
+	"github.com/udodinho/bookings/repository/dbrepo"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 // Repository is the repository type
 type Repository struct {
 	App *config.AppConfig
+	DB  repository.DatabaseRepo
 }
 
 // Repo the repository used by the handlers
 var Repo *Repository
 
 // NewRepository creates a new Repository
-func NewRepository(a *config.AppConfig) *Repository {
-	return &Repository{App: a}
+func NewRepository(a *config.AppConfig, db *driver.DB) *Repository {
+	return &Repository{
+		App: a,
+		DB:  dbrepo.NewPostgresDbRepo(db.SQL, a),
+	}
 }
 
 // NewHandlers sets the repository for the handlers
@@ -31,27 +40,27 @@ func NewHandlers(r *Repository) {
 
 // Home is the home function
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "home.page.gohtml", &models.TemplateData{})
+	render.Template(w, r, "home.page.gohtml", &models.TemplateData{})
 }
 
 // About is the about page
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "about.page.gohtml", &models.TemplateData{})
+	render.Template(w, r, "about.page.gohtml", &models.TemplateData{})
 }
 
 // Contact is the contact page
 func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "contact.page.gohtml", &models.TemplateData{})
+	render.Template(w, r, "contact.page.gohtml", &models.TemplateData{})
 }
 
 // FirstClass is the first class page
 func (m *Repository) FirstClass(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "first-class.page.gohtml", &models.TemplateData{})
+	render.Template(w, r, "first-class.page.gohtml", &models.TemplateData{})
 }
 
 // BusinessClass is the business page
 func (m *Repository) BusinessClass(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "business-class.page.gohtml", &models.TemplateData{})
+	render.Template(w, r, "business-class.page.gohtml", &models.TemplateData{})
 }
 
 // Reservation renders the make reservation page and handles the form submission
@@ -60,7 +69,7 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["reservation"] = emptyReservation
 
-	render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
+	render.Template(w, r, "make-reservation.page.gohtml", &models.TemplateData{
 		Form: form.New(nil),
 		Data: data,
 	})
@@ -73,11 +82,39 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 		helpers.ServerError(w, err)
 		return
 	}
+
+	sd := r.Form.Get("start_date")
+	ed := r.Form.Get("end_date")
+
+	// 01-03-2020
+
+	layout := "02-01-2006"
+	startDate, err := time.Parse(layout, sd)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	endDate, err := time.Parse(layout, ed)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	roomID, err := strconv.Atoi(r.Form.Get("room_id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
 	reservation := models.Reservation{
 		FirstName: r.Form.Get("first_name"),
 		LastName:  r.Form.Get("last_name"),
 		Email:     r.Form.Get("email"),
 		Phone:     r.Form.Get("phone"),
+		StartDate: startDate,
+		EndDate:   endDate,
+		RoomID:    roomID,
 	}
 	forms := form.New(r.PostForm)
 	//forms.Has("first_name", r)
@@ -89,15 +126,34 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 		data := make(map[string]interface{})
 		data["reservation"] = reservation
 
-		render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
+		render.Template(w, r, "make-reservation.page.gohtml", &models.TemplateData{
 			Form: forms,
 			Data: data,
 		})
 		return
 	}
 
-	m.App.Session.Put(r.Context(), "reservation", reservation)
+	newReservationID, err := m.DB.InsertReservation(reservation)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 
+	restriction := models.RoomRestriction{
+		ReservationID: newReservationID,
+		RoomID:        roomID,
+		StartDate:     startDate,
+		EndDate:       endDate,
+		RestrictionID: 1,
+	}
+
+	err = m.DB.InsertRoomRestriction(restriction)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/reservations-summary", http.StatusSeeOther)
 
 }
@@ -116,7 +172,7 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 	data := make(map[string]interface{})
 	data["reservation"] = reservation
 
-	render.RenderTemplate(w, r, "reservation-summary.page.gohtml", &models.TemplateData{
+	render.Template(w, r, "reservation-summary.page.gohtml", &models.TemplateData{
 		Data: data,
 	})
 
@@ -124,7 +180,7 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 
 // Availability renders the search availability page
 func (m *Repository) Availability(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "search-availability.page.gohtml", &models.TemplateData{})
+	render.Template(w, r, "search-availability.page.gohtml", &models.TemplateData{})
 }
 
 // PostAvailability renders the search availability page

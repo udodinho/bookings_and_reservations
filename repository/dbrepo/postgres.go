@@ -37,3 +37,27 @@ func (m PostgresDbRepo) InsertReservation(res models.Reservation) (int, error) {
 	}
 	return newID, nil
 }
+
+// InsertRoomRestriction inserts a new room restriction into the database
+func (m *PostgresDbRepo) InsertRoomRestriction(r models.RoomRestriction) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `insert into room_restriction (room_id, start_date, end_date, reservation_id, restriction_id, created_at, updated_at) 
+		values ($1, $2, $3, $4, $5, $6, $7)`
+
+	_, err := m.DB.ExecContext(ctx, stmt,
+		r.RoomID,
+		r.StartDate,
+		r.EndDate,
+		r.ReservationID,
+		r.RestrictionID,
+		time.Now(),
+		time.Now(),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

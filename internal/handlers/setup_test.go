@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/gob"
+	"fmt"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -13,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -97,4 +99,36 @@ func NoSurf(next http.Handler) http.Handler {
 // SessionLoad loads and saves the session on every request
 func SessionLoad(next http.Handler) http.Handler {
 	return session.LoadAndSave(next)
+}
+
+// CreateTestTemplateCache creates a template cache as a map
+func CreateTestTemplateCache() (map[string]*template.Template, error) {
+	myCache := map[string]*template.Template{}
+
+	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.gohtml", pathToTemplate))
+	if err != nil {
+		return myCache, err
+	}
+	for _, page := range pages {
+		name := filepath.Base(page)
+		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
+		if err != nil {
+			return myCache, err
+		}
+
+		matches, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", pathToTemplate))
+		if err != nil {
+			return myCache, err
+		}
+
+		if len(matches) > 0 {
+			ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.gohtml", pathToTemplate))
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		myCache[name] = ts
+	}
+	return myCache, err
 }

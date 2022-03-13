@@ -35,3 +35,42 @@ func getSession() (*http.Request, error) {
 
 	return r, nil
 }
+
+func TestRenderTemplate(t *testing.T) {
+	pathToTemplate = "./../../templates"
+	tc, err := CreateTemplateCache()
+	if err != nil {
+		t.Error(err)
+	}
+
+	app.TemplateCache = tc
+
+	r, err := getSession()
+	if err != nil {
+		t.Error(err)
+	}
+
+	var ww myWriter
+
+	err = Template(&ww, r, "home.page.gohtml", &models.TemplateData{})
+	if err != nil {
+		t.Error("error writing template to browser")
+	}
+
+	err = Template(&ww, r, "some.page.gohtml", &models.TemplateData{})
+	if err == nil {
+		t.Error("rendered template that does not exist")
+	}
+}
+
+func TestNewTemplates(t *testing.T) {
+	NewRenderer(app)
+}
+
+func TestCreateTemplateCache(t *testing.T) {
+	pathToTemplate = "./../../templates"
+	_, err := CreateTemplateCache()
+	if err != nil {
+		t.Error(err)
+	}
+}

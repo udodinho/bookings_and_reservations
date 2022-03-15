@@ -90,3 +90,39 @@ func (m *PostgresDbRepo) SearchAvailabilityByDatesByRoomID(start, end time.Time,
 
 	return false, nil
 }
+
+// SearchAvailabilityForAllRooms returns a list of rooms that are available for the given dates
+func (m *PostgresDbRepo) SearchAvailabilityForAllRooms(start, end time.Time) ([]models.Room, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var rooms []models.Room
+
+	query := `
+		select 
+			r.id, r.room_name
+		from
+				rooms r
+		where r.id not in 
+		(select rr.room_id from room_restriction rr where $1 < rr.end_date and $2 > rr.start_date)
+		`
+	rows, err := m.DB.QueryContext(ctx, query, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var room models.Room
+		err = rows.Scan(&room.ID, &room.RoomName)
+		if err != nil {
+			return nil, err
+		}
+		rooms = append(rooms, room)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
+}

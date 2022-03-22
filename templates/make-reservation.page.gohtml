@@ -4,13 +4,24 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1 class="text-center mt-4">Make Reservation</h1>
-                <p><strong>Reservation Details</strong></p>
 
-                {{$res := index .Data "reservation"}}
+                <h1 class="text-center mt-4">Make Reservation</h1>
+                <p><strong>Reservation Details</strong><br>
+                    {{$res := index .Data "reservation"}}
+
+                    Room Name: {{$res.Room.RoomName}}<br>
+                Arrival Date: {{index .StringMap "start_date"}}<br>
+                Departure Date: {{index .StringMap "end_date"}}<br>
+                </p>
+
+
 
                 <form action="/reservations" method="post" class="" novalidate>
                     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <input type="hidden" name="start_date" value="{{index .StringMap "start_date"}}">
+                    <input type="hidden" name="end_date" value="{{index .StringMap "end_date"}}">
+                    <input type="hidden" name="room_id" value="{{$res.RoomID}}">
+
                     <div class="row">
                         <div class="col">
                             <div class="mb-3">
@@ -30,6 +41,21 @@
                             </div>
                         </div>
                     </div>
+
+{{/*                    <div class="row">*/}}
+{{/*                        <div class="col">*/}}
+{{/*                            <div class="mb-3">*/}}
+{{/*                        <input type="text" name="start_date" id="start_date" class="form-control" placeholder="Start Date">*/}}
+{{/*                            </div>*/}}
+{{/*                    </div>*/}}
+
+{{/*                        <div class="col">*/}}
+{{/*                            <div class="mb-3">*/}}
+{{/*                            <input type="text" name="end_date" id="end_date" class="form-control" placeholder="End Date">*/}}
+{{/*                        </div>*/}}
+{{/*                    </div>*/}}
+{{/*                </div>*/}}
+
 
                     <div class="row">
                         <div class="col">
